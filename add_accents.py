@@ -11,6 +11,30 @@ import numpy as np
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 from nltk import ngrams
 class AccentRestore:
+    """
+    Lớp AccentRestore dùng để khôi phục dấu trong văn bản tiếng Việt.
+
+    Lớp này sử dụng mô hình học sâu đã được huấn luyện để dự đoán và thêm dấu vào các từ không dấu.
+    Nó có thể xử lý văn bản dài và tạo ra văn bản có dấu chính xác.
+
+    Attributes:
+        path_model (str): Đường dẫn đến mô hình học sâu đã được lưu.
+        NGRAM (int): Số lượng từ tối đa trong một n-gram.
+        MAXLEN (int): Độ dài tối đa của chuỗi đầu vào cho mô hình.
+        alphabet (list): Danh sách các ký tự được sử dụng, bao gồm cả ký tự có dấu và không dấu.
+        accented_chars_vietnamese (list): Danh sách các ký tự có dấu trong tiếng Việt.
+
+    Methods:
+        encode(text): Mã hóa văn bản thành dạng one-hot encoding để đưa vào mô hình.
+        decode(x, calc_argmax=True): Giải mã kết quả dự đoán từ mô hình thành văn bản có dấu.
+        extract_phrases(text): Trích xuất các cụm từ từ văn bản.
+        remove_accent(text): Loại bỏ dấu từ văn bản.
+        guess(ngram): Dự đoán dấu cho một n-gram.
+        gen_ngrams(text): Tạo ra các n-gram từ văn bản.
+        add_padding(words): Thêm padding vào danh sách từ để đạt đủ độ dài NGRAM.
+        add_accent(text): Thêm dấu vào văn bản không dấu.
+        check_have_accent(sentence, threshold=0.5): Kiểm tra xem câu có chứa dấu hay không.
+    """
     def __init__(self, path_model, NGRAM):
         self.path_model = path_model
         with tf.device('/cpu:0'):
