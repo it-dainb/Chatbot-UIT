@@ -1,0 +1,11 @@
+{
+    "class": [
+        "in",
+        "out"
+    ],
+    "embedding_dim": 50,
+    "max_length": 47,
+    "name": "inout",
+    "num_class": 2,
+    "vocab_size": 1634
+}

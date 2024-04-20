@@ -1,4 +1,4 @@
-emoji~=1.6.1
+scipy==1.10.1
 Flask~=2.2.5
 Flask_Cors~=4.0.0
 gensim~=4.1.2
@@ -16,3 +16,4 @@ laserembeddings[vi]
 pymongo[srv]
 openpyxl
 certifi
+tensorflow-addons~=0.22
