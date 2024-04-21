@@ -5,11 +5,12 @@ from collections import Counter
 from tensorflow import keras
 import time
 from preprocessing import *
-from read_database import *
 import os
 import numpy as np
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+
 from nltk import ngrams
+
 class AccentRestore:
     """
     Lớp AccentRestore dùng để khôi phục dấu trong văn bản tiếng Việt.
@@ -37,8 +38,7 @@ class AccentRestore:
     """
     def __init__(self, path_model, NGRAM):
         self.path_model = path_model
-        with tf.device('/cpu:0'):
-            self.model = keras.models.load_model(path_model,compile=False)
+        self.model = keras.models.load_model(path_model,compile=False)
         self.NGRAM = NGRAM
         self.MAXLEN = self.NGRAM*6
         self.alphabet = '^[ _abcdefghijklmnopqrstuvwxyz0123456789áàảãạâấầẩẫậăắằẳẵặóòỏõọôốồổỗộơớờởỡợéèẻẽẹêếềểễệúùủũụưứừửữựíìỉĩịýỳỷỹỵđ!\"\',\-\.:;?_\(\)]+$'
@@ -85,6 +85,7 @@ class AccentRestore:
 
     def gen_ngrams(self, text):
         return ngrams(text.split(), self.NGRAM)
+    
     def add_padding(self, words):
         lenght = len(words)
         num_pad = 0
@@ -108,7 +109,7 @@ class AccentRestore:
         output = ' '.join(c.most_common(1)[0][0] for c in candidates)
         return output
     
-    def check_have_accent(self, sentence, threshhold = 0.5):
+    def need_restore(self, sentence, threshhold = 0.5):
         # if len(sentence.split())<5:
         #     return False
         sentence_non_accent = self.remove_accent(sentence)
@@ -132,7 +133,7 @@ if __name__ == "__main__":
         "gioi thieu ve khoa hoc may tinh", "toiiiiiii muonnnnnn mccsjnsjcsncnsncnjsncncsj ncs njsnsc",\
         "toiiiiiiiiiiiiiiiiiii muonnnnnnnnnnnnnnnnnnnnnnnnnn", "ai tạo ra bot"]
     for text in textes:
-        if accent_restore.check_have_accent(text):
+        if accent_restore.need_restore(text):
             # print("Start restore accents...!!!")
             time_start = time.time()
             text = accent_restore.remove_accent(text)

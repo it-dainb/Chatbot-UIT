@@ -1,1 +1,3 @@
-mongodb://localhost:27017
+version https://git-lfs.github.com/spec/v1
+oid sha256:d9b6f829a1fd8034f8224923998677ed28da268d8ba19c6587951a6f2fc54e40
+size 25

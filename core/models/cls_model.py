@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 keras = tf.keras
 import keras as base_keras
+import tensorflow_addons as tfa
 
 from sklearn.model_selection import train_test_split
 from gensim.models import Word2Vec
@@ -12,7 +13,7 @@ import pickle
 
 import os
 import json
-from core.utils.logging import logger
+from core.utils.logger import logger
 
 class LossType(Enum):
     binary: str = "binary_crossentropy"
@@ -29,7 +30,7 @@ class ClsModel:
         self,
         filters: int,
         kernel_size: int,
-        layer: base_keras.Layer, 
+        layer: base_keras.engine.base_layer.Layer, 
         kernel_initializer: tf.keras.initializers.Initializer, 
     ):
         l_conv = keras.layers.Conv1D(filters, kernel_size, kernel_initializer=kernel_initializer, padding="same", activation="relu")(layer)
@@ -42,7 +43,7 @@ class ClsModel:
     def create_fully_connect(
         self, 
         units: int,
-        layer: base_keras.Layer, 
+        layer: base_keras.engine.base_layer.Layer, 
         kernel_initializer: tf.keras.initializers.Initializer, 
         l2: float=0.001, 
         dropout: float=0.25
@@ -166,7 +167,7 @@ class ClsModel:
     ):
         optimizer = optimizer if optimizer else keras.optimizers.Adam(learning_rate=lr)
         self.model.compile(loss=loss.value, optimizer=optimizer, metrics=[
-            keras.metrics.F1Score(average = 'micro'),
+            tfa.metrics.F1Score(num_classes= self.config['num_class'],average = 'micro'),
             keras.metrics.BinaryAccuracy() if loss == LossType.binary else keras.metrics.CategoricalAccuracy(),
             keras.metrics.Precision(),
             keras.metrics.Recall()

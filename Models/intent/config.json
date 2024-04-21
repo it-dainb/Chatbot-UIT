@@ -1,14 +1,14 @@
 {
     "class": [
-        "hỏi_đáp_uit",
-        "hỏi_đáp_ktx",
         "thông_tin_chỉ_tiêu",
         "hỏi_đáp_điểm_chuẩn",
-        "hỏi_đáp_xét_tuyển",
+        "hỏi_đáp_ngành",
         "hỏi_đáp_nghề_nghiệp",
         "hỏi_đáp_tổ_hợp",
-        "hỏi_đáp_ngành",
+        "hỏi_đáp_uit",
+        "hỏi_đáp_xét_tuyển",
         "thông_tin_học_bổng",
+        "hỏi_đáp_ktx",
         "hỏi_đáp_xe_bus"
     ],
     "embedding_dim": 50,

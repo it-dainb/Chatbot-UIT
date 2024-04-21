@@ -1,19 +1,3 @@
-scipy==1.10.1
-Flask~=2.2.5
-Flask_Cors~=4.0.0
-gensim~=4.1.2
-langdetect~=1.0.9
-laserembeddings~=1.1.2
-nltk~=3.6.5
-numpy~=1.25.0
-pandas~=1.3.4
-pymongo~=4.2.0
-pyvi~=0.1.1
-scikit_learn~=1.0.1
-tensorflow~=2.9.0
-Unidecode~=1.3.2
-laserembeddings[vi]
-pymongo[srv]
-openpyxl
-certifi
-tensorflow-addons~=0.22
+version https://git-lfs.github.com/spec/v1
+oid sha256:716a40d52e97f2b7c37ffb248fcdf76a1ab8c4970f239d0f6b9e693432311d25
+size 3148

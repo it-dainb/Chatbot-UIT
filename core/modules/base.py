@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from core.utils.logging import logger
+from core.utils.logger import logger
 import time
 
 class BaseModule(ABC):

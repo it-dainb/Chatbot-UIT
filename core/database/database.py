@@ -2,7 +2,7 @@ import pandas as pd
 from typing import List, Dict
 from core.utils.preprocessing import clean_text
 
-from core.utils.logging import logger
+from core.utils.logger import logger
 
 ANSWER_MAP = {
     "hỏi_lại_khi_không_hiểu|hỏi_lại": {

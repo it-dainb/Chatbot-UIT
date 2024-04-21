@@ -10,10 +10,10 @@ database = Database(
     path_outdomain=get_config("Path", "outdomain")
 )
 
+preprocessing = PreprocessingModule(database=database, check_accent=True)
 intent = ClsModule(path=os.path.join(get_config("Path", "model"), get_config("Model", "intent")))
 inout = ClsModule(path=os.path.join(get_config("Path", "model"), get_config("Model", "inout")))
 
-preprocessing = PreprocessingModule(database=database, check_accent=False)
 
 pipeline = [preprocessing, inout, intent]
 

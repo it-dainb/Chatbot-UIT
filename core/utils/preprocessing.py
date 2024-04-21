@@ -1,11 +1,10 @@
 import string
 import regex as re
-from pyvi import ViTokenizer, ViUtils
+from pyvi import ViTokenizer
 import emot
 emot_obj = emot.core.emot() 
+import unicodedata
 
-# import check_similarity
-# lowercase words
 def normalize(word):
     word = str(word)
     word = word.strip().lower()
@@ -91,32 +90,8 @@ def spelling_correction(text):
         text = text.replace(key,value)
     return text
 
-
-def is_add_accent(text,threshold_add_accent=0.5):
-    text = str(text)
-    # full not-accent
-    if len(text.strip().split(" ")) >= 2:
-        remove_accents_text = str(ViUtils.remove_accents(text))[2:-1]
-        if text.strip() == remove_accents_text.strip():
-            return True
-
-        # half accent
-        tokens = text.strip().split(" ")
-        count = 0
-        for token in tokens:
-          remove_accents_token = str(ViUtils.remove_accents(token))[2:-1]
-          if token.strip() == remove_accents_token.strip():
-              count +=1
-        if len(tokens) >= 10:
-            if count/len(tokens) > 0.3:
-                return True
-        else:
-            if count / len(tokens) > threshold_add_accent:
-                return True
-    return False
-
 stopwords = ["ak","ạ","hả","á", "à", "ấy","trôi","cậu","có thể","cậu","mình","ai đó",\
-             "vậy","nhé","nha","nhỉ","mình", "vậy", "đó"]
+            "vậy","nhé","nha","nhỉ","mình", "vậy", "đó"]
 def remove_stopword(text):
     text = str(text)
     s = ""
@@ -126,7 +101,8 @@ def remove_stopword(text):
     s = re.sub("\\s+", " ",s).strip()
     return s
 
-def clean_text(text, synonyms_dictionary, check_accent=False):
+def clean_text(text, synonyms_dictionary, check_accent=False, tokenizer = True):
+    text = unicodedata.normalize("NFC", text)
     text = str(text).strip()
     text = re.sub(r"\s+", " ", text).lower()
     text = replace_synonym(text,synonyms_dictionary)
@@ -138,11 +114,18 @@ def clean_text(text, synonyms_dictionary, check_accent=False):
     text = remove_duplate_word(text)
     text = text.translate(str.maketrans('', '', string.punctuation)).lower().strip()
     text = re.sub("\\s+", " ", text).lower()
-    if len(text.split(" ")) > 2:
+
+    # if check_accent:
+    #     if accent_restore.need_restore(text):
+    #         text = accent_restore.remove_accent(text)
+    #         text = accent_restore.add_accent(text)
+    
+    if len(text.split(" ")) > 2 and tokenizer:
         text = ViTokenizer.tokenize(text)
+        
     text = text.replace("giátiền", "giá_tiền")
     return text
 
 if __name__ == "__main__":
-    text = ":)) testin :>"
-    print(remove_icon(text))
+    text = ":)) testin :> . to , las"
+    print(clean_text(text, {}, tokenizer = False))
