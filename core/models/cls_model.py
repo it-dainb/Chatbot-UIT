@@ -220,7 +220,8 @@ class ClsModel:
         logger.debug(f"Test  : {len(X_test)}")
 
         logger.info("Training model")
-        hist = self.model.fit(X_train, y_train, validation_data=(X_test,y_test), epochs=100, batch_size=32, shuffle=True, callbacks=[es_callback])
+        with tf.device('/cpu:0'):
+            hist = self.model.fit(X_train, y_train, validation_data=(X_test,y_test), epochs=100, batch_size=32, shuffle=True, callbacks=[es_callback])
 
         logger.info("Evaluate model")
         score = self.model.evaluate(X_test, y_test, batch_size=32)
@@ -263,7 +264,9 @@ class ClsModel:
     def predict(self, query):
         x_feature = self.prepare_X(query)
 
-        pred_prob = self.model.predict(x_feature, verbose=None)[0]
+        with tf.device('/cpu:0'):
+            pred_prob = self.model.predict(x_feature, verbose=None)[0]
+            
         class_prob = [
             {
                 'class': self.config['class'][idx],

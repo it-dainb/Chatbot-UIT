@@ -64,7 +64,7 @@ class AccentRestoreModel:
 
     def create_model(self, units=256) -> tf.keras.Model:        
         model = keras.Sequential()
-        model.add(keras.layers.LSTM(units = units, input_shape=(self.max_length, len(self.alphabet)), return_sequences=True))
+        model.add(keras.layers.LSTM(units = units, input_shape=(self.config['max_length'], len(self.alphabet)), return_sequences=True))
         model.add(keras.layers.Bidirectional(keras.layers.LSTM(units = units, return_sequences=True, dropout=0.25, recurrent_dropout=0.1)))
         model.add(keras.layers.TimeDistributed(keras.layers.Dense(len(self.alphabet))))
         model.add(keras.layers.Activation('softmax'))
@@ -94,7 +94,7 @@ class AccentRestoreModel:
     @tf.autograph.experimental.do_not_convert
     def gen_ngrams(self, words):
         with tf.device('/gpu:0'):
-            ngrams = tf.strings.ngrams(words.split(), self.ngram).numpy().tolist()
+            ngrams = tf.strings.ngrams(words.split(), self.config['ngram']).numpy().tolist()
         
         for i in np.char.decode(ngrams, encoding='utf-8'):
             yield str(i)
@@ -103,7 +103,7 @@ class AccentRestoreModel:
         ngrams = []
 
         for ngr in self.gen_ngrams(p):
-            if len(ngr) < self.max_length:
+            if len(ngr) < self.config['max_length']:
                 ngrams.append(ngr)
         
         return ngrams
@@ -112,7 +112,7 @@ class AccentRestoreModel:
         return clean_text(text, self.database.synonyms_dictionary, tokenizer=False)
 
     def create_data(self, path):
-        ngrams_path = os.path.join(get_config("Path", "data"), f"{self.ngram}_ngrams.pkl")  
+        ngrams_path = os.path.join(get_config("Path", "data"), f"{self.config['ngram']}_ngrams.pkl")  
         
         if os.path.exists(ngrams_path):
             list_ngrams = joblib.load(ngrams_path)
@@ -121,7 +121,7 @@ class AccentRestoreModel:
                 lines = f_r.read().split("\n")
             
             phrases = itertools.chain.from_iterable(self.extract_phrases(text) for text in lines)
-            phrases = [p.strip() for p in phrases if len(p.strip()) >= self.ngram]
+            phrases = [p.strip() for p in phrases if len(p.strip()) >= self.config['ngram']]
             phrases = list(set(phrases))
             max_p = int(MAX_LINES * 1.2)
             print(max_p)
@@ -130,7 +130,7 @@ class AccentRestoreModel:
             clean_phrases = []
 
             for phrase in tqdm(fast_map(self.clean_text, phrases, threads_limit = 10), total=len(phrases)):
-                if len(phrase.split()) >= self.ngram:
+                if len(phrase.split()) >= self.config['ngram']:
                     clean_phrases.append(phrase)
         
 
@@ -151,16 +151,16 @@ class AccentRestoreModel:
 
 
     def padding(self, text):
-        text = self.pad_token + text + self.pad_token * max(0, self.max_length - len(text) - 1)
+        text = self.pad_token + text + self.pad_token * max(0, self.config['max_length'] - len(text) - 1)
         return text
 
     def encode(self, text):
         text = unicodedata.normalize("NFC", text)
         text = self.padding(text)
 
-        x = np.zeros((self.max_length, len(self.alphabet)))
+        x = np.zeros((self.config['max_length'], len(self.alphabet)))
 
-        for i, c in enumerate(text[:self.max_length]):
+        for i, c in enumerate(text[:self.config['max_length']]):
             x[i, self.alphabet.index(c)] = 1
         
         return x
@@ -189,13 +189,9 @@ class AccentRestoreModel:
         save_path = os.path.join(save_path, name)
         os.makedirs(save_path, exist_ok=True)
 
-        self.ngram = ngram
-        self.max_length = LONGEST_LENGTH * ngram
-        self.name = name
-        
-        self.config['max_length'] = self.max_length
-        self.config['ngram'] = self.ngram
-        self.config['name'] = self.name
+        self.config['max_length'] = LONGEST_LENGTH * ngram
+        self.config['ngram'] = ngram
+        self.config['name'] = name
         
         train, test = self.create_data(data_path)
 
@@ -206,10 +202,10 @@ class AccentRestoreModel:
             filepath=os.path.join(save_path, 'checkpoint_model.keras'),
             save_best_only=True, 
             verbose=1,
-            monitor='val_f1_score',
+            monitor='f1_score',
             mode='max',
         )
-        es_callback = keras.callbacks.EarlyStopping(monitor='val_f1_score', patience=2, mode='max', restore_best_weights=True)
+        es_callback = keras.callbacks.EarlyStopping(monitor='f1_score', patience=2, mode='max', restore_best_weights=True)
 
         with tf.device('/gpu:0'):
             self.model = self.create_model()
