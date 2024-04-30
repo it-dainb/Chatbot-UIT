@@ -15,7 +15,21 @@ def get_config(section, option):
     if _config is None:
         load_config("config.cfg")
 
-    return _config.get(section, option)
+    config = _config.get(section, option)
+    config = str(config)
+
+    if config.isnumeric():
+        return int(config)
+
+    if all([char.isnumeric() for char in config.split(".")]):
+        return float(config)
+
+    if config.lower() == "true":
+        return True
+    elif config.lower() == "false":
+        return False
+        
+    return config
 
 def is_verbose() -> bool:
     return _verbose

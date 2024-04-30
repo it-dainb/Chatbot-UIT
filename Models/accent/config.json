@@ -1,5 +1,5 @@
 {
-    "max_length": 60,
+    "max_length": 30,
     "name": "accent",
     "ngram": 5
 }

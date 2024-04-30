@@ -1,11 +1,8 @@
 import os
 
-os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir=C:/ProgramData/miniconda3/envs/cb_uit"
-
 import numpy as np
 import tensorflow as tf
 keras = tf.keras
-import tensorflow_addons as tfa
 
 import regex as re
 import unidecode    
@@ -19,14 +16,16 @@ from core.config.config import get_config
 from core.utils.preprocessing import clean_text
 import unicodedata
 
+from nltk import ngrams as nltk_ngrams
 from fast_map import fast_map
 
 import os
 import json
 import joblib, pickle
-LONGEST_LENGTH = 6
+from collections import Counter
 
-MAX_LINES = 500_000
+LONGEST_LENGTH = 6
+MAX_LINES = 2_000_000
 
 tf.config.optimizer.set_jit('autoclustering')
 tf.config.optimizer.set_experimental_options({
@@ -37,14 +36,16 @@ tf.config.optimizer.set_experimental_options({
     "dependency_optimization": True,
     "loop_optimization": True,
     "function_optimization": True,
-    "auto_mixed_precision": True,
 })
-
 
 class AccentRestoreModel:
     def __init__(self, path = None, database = None):
         if path is not None:
             self.load(path)
+        else:
+            self.config = {}
+            self.model = None
+            
         self.database = database
         self.accented_chars_vietnamese = [
             'á', 'à', 'ả', 'ã', 'ạ', 'â', 'ấ', 'ầ', 'ẩ', 'ẫ', 'ậ', 'ă', 'ắ', 'ằ', 'ẳ', 'ẵ', 'ặ',
@@ -59,11 +60,9 @@ class AccentRestoreModel:
         self.pad_token = '\x00'
         self.alphabet = list((f'{self.pad_token} _' + string.ascii_letters + string.digits + ''.join(self.accented_chars_vietnamese)))
 
-        self.config = {}
-        self.model = None
-
-    def create_model(self, units=256) -> tf.keras.Model:        
+    def create_model(self, units=256) -> tf.keras.Model:
         model = keras.Sequential()
+        
         model.add(keras.layers.LSTM(units = units, input_shape=(self.config['max_length'], len(self.alphabet)), return_sequences=True))
         model.add(keras.layers.Bidirectional(keras.layers.LSTM(units = units, return_sequences=True, dropout=0.25, recurrent_dropout=0.1)))
         model.add(keras.layers.TimeDistributed(keras.layers.Dense(len(self.alphabet))))
@@ -78,7 +77,6 @@ class AccentRestoreModel:
     ):
         optimizer = optimizer if optimizer else keras.optimizers.Adam(learning_rate=lr)
         self.model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=[
-            tfa.metrics.F1Score(num_classes = len(self.alphabet), average = 'micro'),
             keras.metrics.CategoricalAccuracy(),
             keras.metrics.Precision(),
             keras.metrics.Recall()
@@ -91,13 +89,13 @@ class AccentRestoreModel:
         pattern = r'\w[\w ]*|\s\W+|\W+'
         return re.findall(pattern, text)
 
-    @tf.autograph.experimental.do_not_convert
-    def gen_ngrams(self, words):
-        with tf.device('/gpu:0'):
-            ngrams = tf.strings.ngrams(words.split(), self.config['ngram']).numpy().tolist()
+    def gen_ngrams(self, text):
         
-        for i in np.char.decode(ngrams, encoding='utf-8'):
-            yield str(i)
+        words = text.split() + [self.pad_token] * max(0, self.config['ngram'] - len(text.split()))
+        ngrams = nltk_ngrams(words, self.config['ngram'])
+        
+        for ngram in ngrams:
+            yield ' '.join(ngram)
 
     def process_phrase(self, p):
         ngrams = []
@@ -111,7 +109,7 @@ class AccentRestoreModel:
     def clean_text(self, text):
         return clean_text(text, self.database.synonyms_dictionary, tokenizer=False)
 
-    def create_data(self, path):
+    def create_data(self, path, database = None):
         ngrams_path = os.path.join(get_config("Path", "data"), f"{self.config['ngram']}_ngrams.pkl")  
         
         if os.path.exists(ngrams_path):
@@ -119,34 +117,40 @@ class AccentRestoreModel:
         else:
             with open(path, "r", encoding="utf8") as f_r:
                 lines = f_r.read().split("\n")
+
+            if database is not None:
+                total = len(lines)
+                lines.extend(database.create_train_label_data()['x'])
+                lines.extend(database.answer['Answer'].tolist())
+
+                total = len(lines) - total
             
             phrases = itertools.chain.from_iterable(self.extract_phrases(text) for text in lines)
-            phrases = [p.strip() for p in phrases if len(p.strip()) >= self.config['ngram']]
-            phrases = list(set(phrases))
-            max_p = int(MAX_LINES * 1.2)
-            print(max_p)
-            phrases = phrases[:max_p]
+            phrases = [p.strip() for p in phrases]
+            phrases = list(set(phrases))            
+            phrases = phrases[:MAX_LINES] + phrases[-1 * total - 100:]
 
+            del lines
+            
             clean_phrases = []
 
-            for phrase in tqdm(fast_map(self.clean_text, phrases, threads_limit = 10), total=len(phrases)):
+            for phrase in tqdm(fast_map(self.clean_text, phrases, threads_limit = 20), total=len(phrases)):
                 if len(phrase.split()) >= self.config['ngram']:
                     clean_phrases.append(phrase)
-        
 
             clean_phrases = list(set(clean_phrases))
-            clean_phrases = clean_phrases[:MAX_LINES]
 
+            del phrases
+            
             list_ngrams = []
-
-            for ngrams in tqdm(fast_map(self.process_phrase, clean_phrases, threads_limit = 10), total=len(clean_phrases)):
+            for ngrams in tqdm(fast_map(self.process_phrase, clean_phrases, threads_limit = 20), total=len(clean_phrases)):
                 list_ngrams.extend(ngrams)
 
             list_ngrams = list(set(list_ngrams))
             joblib.dump(list_ngrams, ngrams_path, protocol=pickle.HIGHEST_PROTOCOL)
             
         train, test = train_test_split(list_ngrams, test_size=0.2, random_state=42)
-
+        del list_ngrams
         return train, test
 
 
@@ -177,7 +181,7 @@ class AccentRestoreModel:
             x, y = [], []
             for _ in range(batch_size):  
                 y.append(self.encode(data[cur_index]))
-                x.append(self.encode(unidecode.unidecode(data[cur_index])))
+                x.append(self.encode(self.remove_accent(data[cur_index])))
                 cur_index += 1
                 
                 if cur_index > len(data)-1:
@@ -185,7 +189,7 @@ class AccentRestoreModel:
             
             yield np.array(x), np.array(y)
 
-    def train(self, save_path= "Models", name = "accent", data_path = "Data/train_accent.txt", ngram = 5, batch_size=1024, lr = 0.001):
+    def train(self, epochs = 10, save_path= "Models", name = "accent", data_path = "Data/train_accent.txt", database = None, ngram = 5, batch_size=1024, lr = 0.001):
         save_path = os.path.join(save_path, name)
         os.makedirs(save_path, exist_ok=True)
 
@@ -193,7 +197,7 @@ class AccentRestoreModel:
         self.config['ngram'] = ngram
         self.config['name'] = name
         
-        train, test = self.create_data(data_path)
+        train, test = self.create_data(data_path, database)
 
         train_generator = self.generate_data(train, batch_size=batch_size)
         test_generator = self.generate_data(test, batch_size=batch_size)
@@ -202,26 +206,35 @@ class AccentRestoreModel:
             filepath=os.path.join(save_path, 'checkpoint_model.keras'),
             save_best_only=True, 
             verbose=1,
-            monitor='f1_score',
+            monitor='categorical_accuracy',
             mode='max',
         )
-        es_callback = keras.callbacks.EarlyStopping(monitor='f1_score', patience=2, mode='max', restore_best_weights=True)
+        
+        es_callback = keras.callbacks.EarlyStopping(monitor='categorical_accuracy', patience=2, mode='max', restore_best_weights=True)
 
-        with tf.device('/gpu:0'):
-            self.model = self.create_model()
-            self.compile(lr=lr)
+        json.dump(
+            self.config, 
+            open(os.path.join(save_path, "config.json"), "w", encoding="utf-8"), 
+            ensure_ascii=False,
+            indent=4,
+            sort_keys=True
+        )
 
-            self.model.fit(
-                train_generator, 
-                epochs=100,
-                steps_per_epoch=len(train)//batch_size, 
-                callbacks=[checkpoint_callback, es_callback],
-            )
 
-            self.save(save_path)
+        self.model = self.create_model()
+        self.compile(lr=lr)
 
-            score = self.model.evaluate(test_generator, steps=len(test)//batch_size)
-            logger.info(f"Score: {score}")
+        self.model.fit(
+            train_generator, 
+            epochs=epochs,
+            steps_per_epoch=len(train)//batch_size, 
+            callbacks=[checkpoint_callback, es_callback],
+        )
+
+        self.save(save_path)
+
+        score = self.model.evaluate(test_generator, steps=len(test)//batch_size)
+        logger.info(f"Score: {score}")
 
     def save(self, save_path):
         os.makedirs(save_path, exist_ok=True)
@@ -241,6 +254,49 @@ class AccentRestoreModel:
             raise FileNotFoundError(f"Path {path} not found! Please train model first!")
         
         self.config = json.load(open(os.path.join(path, "config.json"), "r", encoding="utf8"))
-        logger.info(f"Loading {self.config['name']} model from: {path}")
+
+        print(os.path.isfile(os.path.join(path, "model.keras")))
         
-        self.model = keras.models.load_model(os.path.join(path, "model.keras"))
+        logger.info(f"Loading {self.config['name']} model from: {path}")
+        self.model = tf.keras.models.load_model(os.path.join(path, "model.keras"))
+
+    def replace_digits(self, sent_a, sent_b):
+        replaced_sentence = ""
+        for char_a, char_b in zip(sent_a, sent_b):
+            if char_b.isdigit():
+                replaced_sentence += char_a
+            else:
+                replaced_sentence += char_b
+        return replaced_sentence
+
+    def predict(self, query):
+        ngrams = self.process_phrase(query)
+        X = np.array([self.encode(self.remove_accent(ngram)) for ngram in ngrams])
+
+        preds = self.model.predict(X)
+            
+        preds = [self.decode(pred) for pred in preds]
+
+        candidates = [Counter() for _ in range(len(preds) + min(self.config["ngram"], len(preds[0].split())) - 1)]
+        for nid, ngram in enumerate(preds):
+            for wid, word in enumerate(re.split(' +', ngram)):
+                idx = nid + wid
+                if idx < len(candidates):
+                    candidates[nid + wid].update([word])
+                
+        output = ' '.join(c.most_common(1)[0][0] for c in candidates)
+        return self.replace_digits(query, output)
+
+    def need_restore(self, sentence, threshold = 0.5):
+        sentence_non_accent = self.remove_accent(sentence)
+        if sentence.strip() == sentence_non_accent.strip():
+            return True
+        count = 0
+        lst_words =  sentence.split()
+        lst_words_no_accent = sentence_non_accent.split()
+        for index, word in enumerate(lst_words):
+            if word == lst_words_no_accent[index]:
+                count+=1
+        if count/len(lst_words) >= threshold:
+            return True
+        return False

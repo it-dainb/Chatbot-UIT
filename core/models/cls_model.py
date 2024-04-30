@@ -1,8 +1,6 @@
 import numpy as np
 import tensorflow as tf
 keras = tf.keras
-import keras as base_keras
-import tensorflow_addons as tfa
 
 from sklearn.model_selection import train_test_split
 from gensim.models import Word2Vec
@@ -14,6 +12,8 @@ import pickle
 import os
 import json
 from core.utils.logger import logger
+
+import tensorflow_addons as tfa
 
 class LossType(Enum):
     binary: str = "binary_crossentropy"
@@ -30,7 +30,7 @@ class ClsModel:
         self,
         filters: int,
         kernel_size: int,
-        layer: base_keras.engine.base_layer.Layer, 
+        layer, 
         kernel_initializer: tf.keras.initializers.Initializer, 
     ):
         l_conv = keras.layers.Conv1D(filters, kernel_size, kernel_initializer=kernel_initializer, padding="same", activation="relu")(layer)
@@ -43,7 +43,7 @@ class ClsModel:
     def create_fully_connect(
         self, 
         units: int,
-        layer: base_keras.engine.base_layer.Layer, 
+        layer, 
         kernel_initializer: tf.keras.initializers.Initializer, 
         l2: float=0.001, 
         dropout: float=0.25
@@ -167,7 +167,6 @@ class ClsModel:
     ):
         optimizer = optimizer if optimizer else keras.optimizers.Adam(learning_rate=lr)
         self.model.compile(loss=loss.value, optimizer=optimizer, metrics=[
-            tfa.metrics.F1Score(num_classes= self.config['num_class'],average = 'micro'),
             keras.metrics.BinaryAccuracy() if loss == LossType.binary else keras.metrics.CategoricalAccuracy(),
             keras.metrics.Precision(),
             keras.metrics.Recall()
@@ -212,7 +211,7 @@ class ClsModel:
         logger.info("Compile model")
         self.compile(lr, optimizer, loss)
 
-        es_callback = keras.callbacks.EarlyStopping(monitor='val_f1_score', patience=15, mode='max', restore_best_weights=True)
+        es_callback = keras.callbacks.EarlyStopping(monitor='val_binary_accracy' if loss == LossType.binary else 'val_categorical_accuracy', patience=15, mode='max', restore_best_weights=True)
 
         X_train, X_test, y_train, y_test = self.prepare_data(X_data, y_data)
 
@@ -220,8 +219,7 @@ class ClsModel:
         logger.debug(f"Test  : {len(X_test)}")
 
         logger.info("Training model")
-        with tf.device('/cpu:0'):
-            hist = self.model.fit(X_train, y_train, validation_data=(X_test,y_test), epochs=100, batch_size=32, shuffle=True, callbacks=[es_callback])
+        hist = self.model.fit(X_train, y_train, validation_data=(X_test,y_test), epochs=100, batch_size=32, shuffle=True, callbacks=[es_callback])
 
         logger.info("Evaluate model")
         score = self.model.evaluate(X_test, y_test, batch_size=32)
@@ -256,7 +254,7 @@ class ClsModel:
         self.config = json.load(open(os.path.join(path, "config.json"), "r", encoding="utf8"))
         logger.info(f"Loading {self.config['name']} model from: {path}")
         
-        self.model = keras.models.load_model(os.path.join(path, "model.keras"))
+        self.model = tf.keras.models.load_model(os.path.join(path, "model.keras"), custom_objects={"Addons>F1Score": tfa.metrics.F1Score})
         self.tokenizer = joblib.load(os.path.join(path, "tokenizer.pkl"))
         self.w2v_model = joblib.load(os.path.join(path, "w2v_model.pkl"))
         self.embedding_matrix = joblib.load(os.path.join(path, "embedding_matrix.pkl"))

@@ -55,14 +55,9 @@ class Database:
         self.synonyms_dictionary = self.read_share_knowledge()
         self.answer_database, self.answer_template = self.read_answer_database()
         self.products = self.read_product(self.answer_database, self.answer_template)
+        self.question = pd.read_excel(self.path_indomain, sheet_name="Question", skiprows=2)
 
-        logger.info("Reading in domain")
-        self.indomain = pd.read_excel(self.path_indomain, sheet_name="Question", skiprows=2)
-        self.indomain['Question'] = self.indomain['Question'].apply(lambda x: clean_text(x, self.synonyms_dictionary))
-
-        logger.info("Reading out domain")   
-        self.outdomain = pd.read_excel(self.path_outdomain, sheet_name="Full out of domain", skiprows=2)
-        self.outdomain['Question'] = self.outdomain['Question'].apply(lambda x: clean_text(x, self.synonyms_dictionary))
+        self.indomain = None
         
     def read_share_knowledge(self) -> None:
         logger.info("Reading share knowledge")
@@ -126,6 +121,10 @@ class Database:
         return set(list_product)
 
     def create_train_label_data(self) -> Dict:
+        logger.info("Reading in domain")
+        self.indomain = pd.read_excel(self.path_indomain, sheet_name="Question", skiprows=2)
+        self.indomain['Question'] = self.indomain['Question'].apply(lambda x: clean_text(x, self.synonyms_dictionary))
+        
         logger.debug("Creating train label data")
         
         X = self.indomain["Question"].tolist()
@@ -163,6 +162,15 @@ class Database:
         }
 
     def create_train_in_out_data(self) -> Dict:
+        if self.indomain is None:
+            logger.info("Reading in domain")
+            self.indomain = pd.read_excel(self.path_indomain, sheet_name="Question", skiprows=2)
+            self.indomain['Question'] = self.indomain['Question'].apply(lambda x: clean_text(x, self.synonyms_dictionary))
+            
+        logger.info("Reading out domain")   
+        self.outdomain = pd.read_excel(self.path_outdomain, sheet_name="Full out of domain", skiprows=2)
+        self.outdomain['Question'] = self.outdomain['Question'].apply(lambda x: clean_text(x, self.synonyms_dictionary))
+
         logger.debug("Creating train in out data")
         
         X_in_data = self.indomain["Question"].tolist()

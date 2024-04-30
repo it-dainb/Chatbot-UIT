@@ -101,7 +101,10 @@ def remove_stopword(text):
     s = re.sub("\\s+", " ",s).strip()
     return s
 
-def clean_text(text, synonyms_dictionary, check_accent=False, tokenizer = True):
+def tokenizer(text):
+    return ViTokenizer.tokenize(text)
+
+def clean_text(text, synonyms_dictionary, tokenizer = True):
     text = unicodedata.normalize("NFC", text)
     text = str(text).strip()
     text = re.sub(r"\s+", " ", text).lower()
@@ -115,11 +118,6 @@ def clean_text(text, synonyms_dictionary, check_accent=False, tokenizer = True):
     text = text.translate(str.maketrans('', '', string.punctuation)).lower().strip()
     text = re.sub("\\s+", " ", text).lower()
 
-    # if check_accent:
-    #     if accent_restore.need_restore(text):
-    #         text = accent_restore.remove_accent(text)
-    #         text = accent_restore.add_accent(text)
-    
     if len(text.split(" ")) > 2 and tokenizer:
         text = ViTokenizer.tokenize(text)
         
