@@ -14,7 +14,7 @@ class BaseModule(ABC):
         pass
 
     def forward(self, **kwargs) -> dict:
-        if "exit" in data:
+        if "exit" in kwargs:
             return kwargs
 
         logger.debug(f"Forwarding {self.name} module")
