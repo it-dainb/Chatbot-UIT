@@ -1,5 +1,5 @@
-test = "0.5a"
+from lingua import Language, LanguageDetectorBuilder
 
-print(all([char.isnumeric() for char in test.split(".")]))
+languages = [Language.ENGLISH, Language.VIETNAMESE]
+detector = LanguageDetectorBuilder.from_languages(*languages).build()
 
-print(test.isnumeric())

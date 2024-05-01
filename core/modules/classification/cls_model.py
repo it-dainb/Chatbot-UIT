@@ -11,9 +11,7 @@ class ClsModule(BaseModule):
     def _forward(self, **kwargs):
 
         text = kwargs["text"]
-
         
-
         domain = self.model_inout.predict(text)[0]["class"]
         
         result = {

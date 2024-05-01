@@ -1,7 +1,7 @@
 from core.database.database import Database
 from core.config.config import get_config
 import time
-from core.modules import PreprocessingModule, ClsModule, GenerateModule, RetrieveModule, OptimumRerank
+from core.modules import PreprocessingModule, ClsModule, GenerateModule, RetrieveModule, OptimumRerank, LanguageModule
 
 import os
 from dotenv import load_dotenv
@@ -27,6 +27,10 @@ preprocessing = PreprocessingModule(
     threshold=get_config("Chat", "accent_threshold")
 )
 
+language_detect = LanguageModule(
+    threshold=get_config("Chat", "language_threshold")
+)
+
 classification = ClsModule(
     model_inout=os.path.join(get_config("Path", "model"), get_config("Model", "inout")),
     model_intent=os.path.join(get_config("Path", "model"), get_config("Model", "intent")),
@@ -49,7 +53,7 @@ generation = GenerateModule(
     )
 )
 
-pipeline = [preprocessing, classification, generation]
+pipeline = [preprocessing, language_detect, classification, generation]
 
 while(True):
     query = input("Nhập truy vấn: ")

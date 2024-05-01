@@ -8,6 +8,7 @@ class BaseModule(ABC):
 
     def exit(self, data):
         data["exit"] = True
+        return data
     
     @abstractmethod
     def _forward(self, **kwargs) -> dict:
