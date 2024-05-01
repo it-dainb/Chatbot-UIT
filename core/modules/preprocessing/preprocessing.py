@@ -2,7 +2,7 @@ from core.modules.base import BaseModule
 from core.utils.preprocessing import clean_text, tokenizer
 from core.database.database import Database
 from core.models.accent_restore_model import AccentRestoreModel
-
+from core.config.config import get_config
 class PreprocessingModule(BaseModule):
     def __init__(self, database: Database, check_accent: bool = False, accent_path:str = None, threshold=0.5) -> None:
         self.database = database
@@ -13,7 +13,8 @@ class PreprocessingModule(BaseModule):
                 raise ValueError("Accent path is required")
             
             self.accent_model = AccentRestoreModel(
-                path = accent_path
+                path = accent_path,
+                verbose=get_config("Debug", "verbose")
             )
 
         self.threshold = threshold

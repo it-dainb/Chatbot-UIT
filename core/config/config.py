@@ -1,15 +1,11 @@
 from configparser import ConfigParser
 
-_verbose: bool = False
 _config: ConfigParser = None
 
 def load_config(path) -> None:
     global _config
     _config = ConfigParser()
-    _config.read(path)
-    
-    _verbose = get_config("Dev", "verbose")
-    
+    _config.read(path)    
 
 def get_config(section, option):
     if _config is None:
@@ -30,6 +26,3 @@ def get_config(section, option):
         return False
         
     return config
-
-def is_verbose() -> bool:
-    return _verbose

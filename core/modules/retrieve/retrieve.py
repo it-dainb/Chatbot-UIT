@@ -9,12 +9,14 @@ from llama_index.core.retrievers import RecursiveRetriever
 from llama_index.retrievers.bm25 import BM25Retriever
 from llama_index.core.retrievers import QueryFusionRetriever
 
+from core.config.config import get_config
+
 from unidecode import unidecode
 import joblib
 from os import path
 
 class RetrieveModule:
-    def __init__(self, model: str, path_data: str, top_vector: int = 3, top_bm25: int = None, max_length:int = 256):
+    def __init__(self, model: str, path_data: str, top_vector: int = 3, top_bm25: int = None, max_length:int = 256, verbose=None):
         super().__init__()
 
         self.set_embed(model, max_length)
@@ -33,6 +35,11 @@ class RetrieveModule:
             top_bm25 = top_vector
 
         self.top_bm25 = top_bm25
+
+        if verbose is None:
+            verbose = get_config("Debug", "verbose")
+        
+        self.verbose = verbose
 
     def set_embed(self, model, max_length):
         tokenizer = AutoTokenizer.from_pretrained(model)
@@ -75,7 +82,7 @@ class RetrieveModule:
                 "root",
                 retriever_dict={"root": index.as_retriever(similarity_top_k=self.top_vector, **kargs)},
                 node_dict=self.nodes_dict[intent],
-                verbose=True,
+                verbose=self.verbose,
             )
 
             bm25_retriever = BM25Retriever.from_defaults(similarity_top_k=self.top_bm25, docstore=storage_context.docstore, verbose=True)
@@ -85,7 +92,7 @@ class RetrieveModule:
                 similarity_top_k=None,
                 num_queries=1,
                 use_async=True,
-                verbose=True,
+                verbose=self.verbose,
             )
 
             self.retrievers[intent] = retriever

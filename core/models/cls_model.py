@@ -20,11 +20,13 @@ class LossType(Enum):
     categorical: str = "categorical_crossentropy"
 
 class ClsModel:
-    def __init__(self, path: str = None):
+    def __init__(self, path: str = None, verbose = True):
         if path is None:
             self.reset()
         else:
             self.load(path)
+
+        self.verbose = verbose
 
     def create_feature_conv(
         self,
@@ -263,7 +265,7 @@ class ClsModel:
         x_feature = self.prepare_X(query)
 
         with tf.device('/cpu:0'):
-            pred_prob = self.model.predict(x_feature, verbose=None)[0]
+            pred_prob = self.model.predict(x_feature, verbose=self.verbose)[0]
             
         class_prob = [
             {

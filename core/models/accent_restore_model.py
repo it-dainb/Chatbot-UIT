@@ -39,7 +39,7 @@ tf.config.optimizer.set_experimental_options({
 })
 
 class AccentRestoreModel:
-    def __init__(self, path = None, database = None):
+    def __init__(self, path = None, database = None, verbose = True):
         if path is not None:
             self.load(path)
         else:
@@ -59,6 +59,8 @@ class AccentRestoreModel:
         self.accented_chars_vietnamese.extend([c.upper() for c in self.accented_chars_vietnamese])
         self.pad_token = '\x00'
         self.alphabet = list((f'{self.pad_token} _' + string.ascii_letters + string.digits + ''.join(self.accented_chars_vietnamese)))
+
+        self.verbose = verbose
 
     def create_model(self, units=256) -> tf.keras.Model:
         model = keras.Sequential()
@@ -273,7 +275,7 @@ class AccentRestoreModel:
         ngrams = self.process_phrase(query)
         X = np.array([self.encode(self.remove_accent(ngram)) for ngram in ngrams])
 
-        preds = self.model.predict(X)
+        preds = self.model.predict(X, verbose = self.verbose)
             
         preds = [self.decode(pred) for pred in preds]
 

@@ -7,6 +7,9 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from llama_index.llms.openai import OpenAI
+import colorlog
+
+colorlog.getLogger("CHATBOT_UIT").setLevel(get_config("Debug", "log_level"))
 
 llm = OpenAI(
     model="gpt-3.5-turbo", 
@@ -71,6 +74,7 @@ while(True):
 
     print("QUESTION : ", data["text"])
     print("RESPONSE : ", data["response"])
-    print("CHAT ID  : ", data["chat_id"])
+    if id != "":
+        print("CHAT ID  : ", data["chat_id"])
 
     print("Time Inference: ", time.time() - start)
