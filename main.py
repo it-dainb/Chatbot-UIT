@@ -53,7 +53,7 @@ generation = GenerateModule(
     )
 )
 
-pipeline = [preprocessing, language_detect, classification, generation]
+pipeline = [language_detect, preprocessing, classification, generation]
 
 while(True):
     query = input("Nhập truy vấn: ")
@@ -65,8 +65,12 @@ while(True):
     if id != "":
         data["chat_id"] = id
         
+    start = time.time()
     for module in pipeline:
-        start = time.time()
         data = module.forward(**data)
-        print(data)
-        print("Time Inference: ", time.time() - start)
+
+    print("QUESTION : ", data["text"])
+    print("RESPONSE : ", data["response"])
+    print("CHAT ID  : ", data["chat_id"])
+
+    print("Time Inference: ", time.time() - start)

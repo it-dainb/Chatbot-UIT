@@ -15,14 +15,15 @@ class BaseModule(ABC):
         pass
 
     def forward(self, **kwargs) -> dict:
-        if "exit" in kwargs:
-            return kwargs
-
         logger.debug(f"Forwarding {self.name} module")
         logger.debug(f"Input           : {kwargs}")
 
         start = time.time()
-        data = self._forward(**kwargs)
+
+        data = kwargs
+        if "exit" not in kwargs:
+            data = self._forward(**kwargs)
+            
         logger.debug(f"Forwarding time : {time.time() - start} s")
 
         kwargs.update(data)
