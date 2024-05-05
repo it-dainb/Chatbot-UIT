@@ -261,7 +261,7 @@ class ClsModel:
         self.w2v_model = joblib.load(os.path.join(path, "w2v_model.pkl"))
         self.embedding_matrix = joblib.load(os.path.join(path, "embedding_matrix.pkl"))
     
-    def predict(self, query):
+    async def predict(self, query):
         x_feature = self.prepare_X(query)
 
         with tf.device('/cpu:0'):

@@ -11,10 +11,10 @@ class BaseModule(ABC):
         return data
     
     @abstractmethod
-    def _forward(self, **kwargs) -> dict:
+    async def _forward(self, **kwargs) -> dict:
         pass
 
-    def forward(self, **kwargs) -> dict:
+    async def forward(self, **kwargs) -> dict:
         logger.debug(f"Forwarding {self.name} module")
         logger.debug(f"Input           : {kwargs}")
 
@@ -22,7 +22,7 @@ class BaseModule(ABC):
 
         data = kwargs
         if "exit" not in kwargs:
-            data = self._forward(**kwargs)
+            data = await self._forward(**kwargs)
             
         logger.debug(f"Forwarding time : {time.time() - start} s")
 

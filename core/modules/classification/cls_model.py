@@ -11,11 +11,12 @@ class ClsModule(BaseModule):
         
         self.name: str = "Classification"
 
-    def _forward(self, **kwargs):
+    async def _forward(self, **kwargs):
 
         text = kwargs["text"]
         
-        domain = self.model_inout.predict(text)[0]["class"]
+        domain = await self.model_inout.predict(text)
+        domain = domain[0]["class"]
         
         result = {
             "domain": domain,
@@ -23,7 +24,9 @@ class ClsModule(BaseModule):
         }
 
         if domain == "in":
-            intent = self.model_intent.predict(text)[0]["class"]
+            intent = await self.model_intent.predict(text)
+            intent = intent[0]["class"]
+            
             result["intent"] = intent
         
         result["text"] = text.replace("_", " ")

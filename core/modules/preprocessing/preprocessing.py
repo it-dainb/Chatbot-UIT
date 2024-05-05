@@ -21,7 +21,7 @@ class PreprocessingModule(BaseModule):
         
         self.name = "Preprocessing"
 
-    def _forward(self, **kwargs) -> dict:
+    async def _forward(self, **kwargs) -> dict:
         if self.check_accent:
             text = clean_text(
                 kwargs["text"],

@@ -19,7 +19,7 @@ class LanguageModule(BaseModule):
 
         return True, score
 
-    def _forward(self, **kwargs):
+    async def _forward(self, **kwargs):
         text = kwargs["text"]
 
         valid, score = self.is_valid_language(text)

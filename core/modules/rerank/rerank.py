@@ -86,8 +86,10 @@ class OptimumRerank(BaseNodePostprocessor):
             with torch.no_grad():
                 self._model(**warmup_features).logits
                 outputs = self._model(**features)
-                outputs = outputs["logits"][0]
+                outputs = outputs["logits"]
                 outputs = outputs.numpy()
+                outputs = outputs.reshape(1, -1)
+                outputs = outputs[0]
                 
             scores = sigmoid(outputs)
 
