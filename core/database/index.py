@@ -181,5 +181,6 @@ class IndexDatabase:
             folder_name=model,
             tokenizer=tokenizer,
             pooling='mean',
-            max_length=max_length
+            max_length=max_length,
+            device='cpu'
         )

@@ -8,6 +8,4 @@ class UserRole(str, Enum):
 class User(BaseModel):
     username: str
     role: UserRole = UserRole.USER
-
-class UserInDB(User):
     hashed_password: str

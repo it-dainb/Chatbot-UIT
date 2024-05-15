@@ -27,17 +27,6 @@ from collections import Counter
 LONGEST_LENGTH = 6
 MAX_LINES = 2_000_000
 
-tf.config.optimizer.set_jit('autoclustering')
-tf.config.optimizer.set_experimental_options({
-    "layout_optimizer": True,
-    "constant_folding": True,
-    "shape_optimization": True,
-    "remapping": True,
-    "dependency_optimization": True,
-    "loop_optimization": True,
-    "function_optimization": True,
-})
-
 class AccentRestoreModel:
     def __init__(self, path = None, database = None, verbose = True):
         if path is not None:
@@ -275,7 +264,8 @@ class AccentRestoreModel:
         ngrams = self.process_phrase(query)
         X = np.array([self.encode(self.remove_accent(ngram)) for ngram in ngrams])
 
-        preds = self.model.predict(X, verbose = self.verbose)
+        with tf.device('/cpu:0'):
+            preds = self.model.predict(X, verbose = self.verbose)
             
         preds = [self.decode(pred) for pred in preds]
 

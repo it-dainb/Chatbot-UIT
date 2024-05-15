@@ -3,11 +3,9 @@ from pymongo.server_api import ServerApi
 from pymongo.errors import DuplicateKeyError
 
 from passlib.context import CryptContext
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
-from datetime import timedelta
 from calendar import timegm
-from jose import JWTError
 
 from api.models.user import UserRole, User
 from api.models.auth import AuthCode
@@ -73,10 +71,14 @@ class MongoDatabase:
 
     def get_user_by_username(self, username: str):
         c = self.users.find_one({"_id": username})
+
+        if c is None:
+            return None
         
         user = User(
             username=c["_id"],
-            role=UserRole(c["role"])
+            role=UserRole(c["role"]),
+            hashed_password=c["password"]
         )
 
         return user
@@ -88,7 +90,7 @@ class MongoDatabase:
         if user is None:
             return AuthCode.USER_NOT_EXIST
         
-        if not self.verify_password(password, user.password):
+        if not self.verify_password(password, user.hashed_password):
             return AuthCode.WRONG_PASSWORD
 
         return AuthCode.SUCCESS
