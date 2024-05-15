@@ -193,7 +193,7 @@ def new_chat(state: State) -> None:
     state.current_user_message = ""
 
 
-def tree_adapter(item: list) -> [str, str]:
+def tree_adapter(item: list):
     """
     Converts element of past_conversations to id and displayed string
 

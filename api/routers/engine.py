@@ -24,7 +24,7 @@ async def chat(
 
     data = {
         "text": text,
-        "chat_id": chat_id,
+        "chat_id": str(chat_id) if chat_id is not None else None,
     }
 
     for module in pipelines:

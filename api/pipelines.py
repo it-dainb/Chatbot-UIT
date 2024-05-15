@@ -1,4 +1,4 @@
-from core.modules import PreprocessingModule, ClsModule, GenerateModule, RetrieveModule, OptimumRerank, LanguageModule
+from core.modules import PreprocessingModule, ClsModule, GenerateModule, RetrieveModule, OptimumRerank, LanguageModule, CacheModule
 from core.database import Database
 from core.database.index import IndexDatabase
 from core.config import get_config
@@ -59,4 +59,9 @@ generation = GenerateModule(
     )
 )
 
-pipelines = [language_detect, preprocessing, classification, generation]
+cache = CacheModule(
+    index_db=index_database,
+    threshold=get_config("Chat", "cache_threshold")
+)
+
+pipelines = [language_detect, preprocessing, classification, cache, generation, cache]

@@ -15,20 +15,21 @@ class ClsModule(BaseModule):
 
         text = kwargs["text"]
         
+        result = {
+            "chat_text": text.replace("_", " ")
+        }
+        
         domain = await self.model_inout.predict(text)
         domain = domain[0]["class"]
-        
-        result = {
-            "domain": domain,
-            "intent": None
-        }
+
+        result["domain"] = domain
+        result["intent"] = None
+        result["text"] = text
 
         if domain == "in":
             intent = await self.model_intent.predict(text)
-            intent = intent[0]["class"]
             
-            result["intent"] = intent
-        
-        result["text"] = text.replace("_", " ")
+            result["intent"] = intent[0]["class"]
+            result["intent_score"] = intent[0]["prob"]
         
         return result

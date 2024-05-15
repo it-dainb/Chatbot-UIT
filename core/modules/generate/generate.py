@@ -9,11 +9,13 @@ from llama_index.core.postprocessor import LongContextReorder
 
 from llama_index.core import Settings
 from llama_index.llms.openai import OpenAI
+from llama_index.core.base.llms.types import ChatMessage, MessageRole
 
 from uuid import uuid4, UUID
 
 DEFAULT_SYSTEM_PROMPT = \
-"""You are an advising education enrollment chatbot for VNUHCM - University of Information Technology (UIT), able to have normal interactions.
+"""## INSTRUCTION
+You are an advising education enrollment chatbot for VNUHCM - University of Information Technology (UIT), able to have normal interactions.
 Your mission is to direct people to join UIT school and alway suggest people to join UIT.
 
 Chatbot's Author: Nguyễn Bá Đại - MSSV: 21521914 - Email: it.dainb@gmail.com
@@ -21,6 +23,7 @@ Chatbot's Co-Author: Nguyễn Tấn Dũng - MSSV: 21521978 - Email: 21521978@gm.
 Admissions hotline: 090.883.1246
 Admissions email: tuyensinh@uit.edu.vn
 
+## CONTEXT
 Here are the relevant documents of the UIT schools for the context:
 ĐGNL: Đánh Giá Năng Lực
 {context_str}
@@ -66,8 +69,8 @@ class GenerateModule(BaseModule):
         
         return chat_id
 
-    def get_or_create_memory(self, chat_id: UUID = None):
-        if chat_id is None or chat_id not in self.memories or chat_id == '':
+    def get_or_create_memory(self, chat_id = None):
+        if chat_id is None or chat_id.strip() not in self.memories or chat_id == '':
             chat_id = self.create_chat(chat_id)
 
         return self.memories[chat_id], chat_id
@@ -81,7 +84,7 @@ class GenerateModule(BaseModule):
             context_template=DEFAULT_SYSTEM_PROMPT
         )
 
-    async def chat(self, text, engine: BaseChatEngine, memory):
+    async def chat(self, text, engine: BaseChatEngine, memory):        
         response = await engine.achat(text, chat_history=memory.get_all())
         response = str(response)
         
@@ -92,10 +95,29 @@ class GenerateModule(BaseModule):
     async def _forward(self, **kwargs) -> dict:
 
         chat_id = kwargs.get("chat_id")
-        
         memory, chat_id = self.get_or_create_memory(chat_id)
 
-        text = kwargs["text"]
+        if kwargs.get("cache_hit", False):
+            memory.put(
+                ChatMessage(
+                    content=kwargs["chat_text"],
+                    role=MessageRole.USER
+                )
+            )
+
+            memory.put(
+                ChatMessage(
+                    content=kwargs["response"],
+                    role=MessageRole.ASSISTANT
+                )
+            )
+
+            return {
+                "response": kwargs["response"],
+                "chat_id": chat_id
+            }
+
+        text = kwargs["chat_text"]
         domain = kwargs["domain"]
         intent = kwargs["intent"]
 

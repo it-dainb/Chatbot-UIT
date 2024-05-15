@@ -31,7 +31,7 @@ class RetrieveModule:
             self.retrievers = {}
         
         if intent not in self.retrievers:
-            storage_context = self.index_db.get_storage_context(intent)
+            storage_context = self.index_db.get_or_create_storage_context(intent)
 
             index = VectorStoreIndex(
                 nodes = [],

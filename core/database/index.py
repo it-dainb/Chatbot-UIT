@@ -66,18 +66,27 @@ class IndexDatabase:
         
         self.reload()
 
-    def get_storage_context(self, intent):
+    def get_or_create_storage_context(self, intent):
         intent = unidecode(intent.lower())
         
         if intent not in self.storages:
             path_data = path.join(self.path_data, intent)
-            
-            storage_context = StorageContext.from_defaults(
-                vector_store=ChromaVectorStore(
-                    chroma_collection=self.chroma_client.get_or_create_collection(intent)
-                ),
-                persist_dir=path_data,
-            )
+
+            if not path.exists(path_data):
+                storage_context = StorageContext.from_defaults(
+                    vector_store=ChromaVectorStore(
+                        chroma_collection=self.chroma_client.get_or_create_collection(intent)
+                    ),
+                )
+
+                storage_context.persist(path_data)
+            else:
+                storage_context = StorageContext.from_defaults(
+                    vector_store=ChromaVectorStore(
+                        chroma_collection=self.chroma_client.get_or_create_collection(intent)
+                    ),
+                    persist_dir=path_data,
+                )
             
             self.storages[intent] = storage_context
 

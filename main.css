@@ -35,7 +35,7 @@ body {
   margin-bottom: 20px;
   margin-top: 20px;
   position: relative;
-  display: inline-block;
+  display: block;
   padding: 15px;
   background-color: #140a1e;
   border-radius: 12px;
