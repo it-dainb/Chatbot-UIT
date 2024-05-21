@@ -1,3 +1,4 @@
+# This is called from uit. py and we need to be able to set options that aren't in the config
 import nest_asyncio
 nest_asyncio.apply()
 

@@ -21,6 +21,10 @@ chat_md = Markdown("""
 DEFAULT_MESSAGE = "Xin Chào, tôi là Chatbot tuyển sinh của UIT. Tôi có thể giúp gì cho bạn?"
 
 def user_log_out(state):
+    """
+     @brief Navigate to login page. Clears state and displays success message. Navigates to login page.
+     @param state State instance to pass to template function ( user_login
+    """
     state.token = None
     state.login_username = ""
     state.login_password = ""

@@ -43,13 +43,23 @@ ANSWER_MAP = {
 }
 
 class Database:
+
     def __init__(self, path_indomain: str, path_outdomain: str):
+        """
+         @brief Initialize the instance. This is the entry point for the class. It reads the file and stores the data in the instance variables
+         @param path_indomain Path to the indomain file
+         @param path_outdomain Path to the outdomain file
+        """
         self.path_indomain = path_indomain
         self.path_outdomain = path_outdomain
         
         self.read_file()
         
     def read_file(self) -> None:
+        """
+         @brief Read file and create data structures. This is called after all files have been read and the file is ready to be used for reading.
+         @return None for success or a list of error messages for failure. In case of failure the method returns None
+        """
         logger.info("Reading file")
         
         self.synonyms_dictionary = self.read_share_knowledge()
@@ -60,6 +70,10 @@ class Database:
         self.indomain = None
         
     def read_share_knowledge(self) -> None:
+        """
+         @brief Read share knowledge from indomain. This is used to create dictionary of keywords and synonyms. It is called by read_indomain ()
+         @return dictionary of keywords and
+        """
         logger.info("Reading share knowledge")
         
         self.share = pd.read_excel(self.path_indomain, sheet_name="Share Knowledge", skiprows=2)
@@ -70,6 +84,10 @@ class Database:
         return synonyms_dictionary
 
     def read_answer_database(self) -> None:
+        """
+         @brief Read answer database and populate data structures. This method is called after all data has been read and the answers have been stored in the database.
+         @return None or a dictionary with data structures. See : py : meth : ` ~pyskool. hmtk. read_data
+        """
         logger.info("Reading answer database")
         
         self.answer = pd.read_excel(self.path_indomain, sheet_name="Answer", skiprows=2)
@@ -89,6 +107,7 @@ class Database:
         database = database_raw.set_index('Pattern Template').T.to_dict()
 
         # Check again to update multiple answer
+        # This function will convert the database data into a list of rows
         for key, value in database.items():
             rows = database_raw[database_raw['Pattern Template'] == key]
             rows_answer = rows['Answer'].to_list()
@@ -96,23 +115,35 @@ class Database:
             
         answer_template = [str(item) for item in database.keys()]
 
+        # Set database for an intent and answer
         for intent, answer in ANSWER_MAP.items():
+            # Set the answer for the intent
             if intent not in database or (intent in database and 'Answer' not in database[intent]):
                 database[intent] = answer
 
         return database, answer_template
 
     def read_product(self, answer_database: Dict, answer_template: List[str]) -> None:
+        """
+         @brief Read product from answer database. The method will return list of products which are present in answer template.
+         @param answer_database Dictionary with answer database. Must contain template and product.
+         @param answer_template List of templates which will be used to read product.
+         @return Set of product names. Empty if not found or empty list if template is not found in database or product is not
+        """
         logger.info("Reading product")
         
         list_product = []
+        # This function will add the product to the list of templates in the answer_database
         for template in answer_template:
+            # If template is not in answer_database continue.
             if template not in answer_database:
                 continue
             
+            # If product is not in answer_database template continue.
             if "Product" not in answer_database[template]:
                 continue
 
+            # if answer_database template Product. strip
             if str(answer_database[template]["Product"]).strip() in ["", "Khác"]:
                 continue
 
@@ -121,6 +152,10 @@ class Database:
         return set(list_product)
 
     def create_train_label_data(self) -> Dict:
+        """
+         @brief Create train label data from indomain. In order to use this data you need to set self. train_label_data = True
+         @return Dict {'X': list of intents'y': list of intents
+        """
         logger.info("Reading in domain")
         self.indomain = pd.read_excel(self.path_indomain, sheet_name="Question", skiprows=2)
         self.indomain['Question'] = self.indomain['Question'].apply(lambda x: clean_text(x, self.synonyms_dictionary))
@@ -131,12 +166,15 @@ class Database:
         y = self.indomain["Pattern Template"].tolist()
 
         list_label = []
+        # Add label to the label list
         for item in set(y):
             label = item.split("|")[0].strip()
             
+            # if label is None or None continue to strip the label.
             if label.strip() in ["None", "", "truy_vấn_ngoài_phạm_vi"]:
                 continue
 
+            # Remove the label from the list if it is a list label.
             if label.strip() in list_label:
                 continue
 
@@ -144,8 +182,10 @@ class Database:
 
         X_data = []
         y_data = []
+        # Add the labels to X and y
         for intents, x in zip(y, X):
             label = intents.split("|")[0].strip()
+            # Add the x and y labels to the X_data.
             if label in list_label:
                 X_data.append(x)
                 y_data.append(list_label.index(label))
@@ -162,6 +202,15 @@ class Database:
         }
 
     def create_train_in_out_data(self) -> Dict:
+        """
+        Creates train in and out data for each question in the domain. It is used to train the neural network
+        
+        
+        @return Dict with keys'Question'and
+        """
+
+
+        # Read in domain and add Question to the domain
         if self.indomain is None:
             logger.info("Reading in domain")
             self.indomain = pd.read_excel(self.path_indomain, sheet_name="Question", skiprows=2)

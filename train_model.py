@@ -1,3 +1,4 @@
+# This is a test of model. py that will be run on a database and not on a file
 from core.database.database import Database
 from core.config.config import get_config
 from core.models.cls_model import ClsModel, LossType

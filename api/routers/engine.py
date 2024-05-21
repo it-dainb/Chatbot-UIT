@@ -21,7 +21,16 @@ async def chat(
     text: Annotated[str, Form(..., description="Input text to chat")], 
     chat_id: Annotated[UUID, Form(..., description="Chat ID for tracking conversation features")] = None
 ) -> ChatResponse:
+    """
+    Handles chat requests and processes the input text through multiple modules.
 
+    Args:
+        text (str): The input text to be processed.
+        chat_id (UUID, optional): An optional chat ID for tracking conversation features.
+
+    Returns:
+        ChatResponse: The chat response containing the processed message and chat ID.
+    """
     data = {
         "text": text,
         "chat_id": str(chat_id) if chat_id is not None else None,

@@ -1,3 +1,4 @@
+# end of taipy. gizmo. uis - chat. jpg ( tinym
 # -*- coding: utf-8 -*-
 from taipy.gui import Gui, Markdown
 
