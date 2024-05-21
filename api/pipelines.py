@@ -1,3 +1,4 @@
+# This is the entry point for GPT. It takes care of setting up the graph and then instantiating modules
 from core.modules import PreprocessingModule, ClsModule, GenerateModule, RetrieveModule, OptimumRerank, LanguageModule, CacheModule
 from core.database import Database
 from core.database.index import IndexDatabase

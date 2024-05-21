@@ -17,7 +17,19 @@ async def register(
     password: Annotated[str, Form()], 
     role : Optional[Annotated[UserRole, Form()]] = UserRole.USER
 ) -> Token:
+    """_summary_
 
+    Args:
+        username (Annotated[str, Form): _description_
+        password (Annotated[str, Form): _description_
+        role (Optional[Annotated[UserRole, Form, optional): _description_. Defaults to UserRole.USER.
+
+    Raises:
+        HTTPException: _description_
+
+    Returns:
+        Token: _description_
+    """
     auth_code: AuthCode = mongo.create_user(
         username=username,
         password=password,
@@ -40,7 +52,18 @@ async def register(
     username : Annotated[str, Form()], 
     password: Annotated[str, Form()]
 ) -> Token:
+    """_summary_
 
+    Args:
+        username (Annotated[str, Form): _description_
+        password (Annotated[str, Form): _description_
+
+    Raises:
+        HTTPException: _description_
+
+    Returns:
+        Token: _description_
+    """
     auth_code: AuthCode = mongo.authenticate_user(
         username=username,
         password=password

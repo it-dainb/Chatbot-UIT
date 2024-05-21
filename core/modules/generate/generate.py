@@ -32,7 +32,15 @@ Instruction: Use the previous chat history, or the context above, to interact an
 
 class GenerateModule(BaseModule):
     def __init__(self, retriever: RetrieveModule, max_tokens_memory=1000, rerank: OptimumRerank = None, llm: OpenAI = None):
+        """
+        @brief Initialize the LLLM. This is the entry point for the LLLM generator. You can pass in a custom retriever and it will be used to generate tokens.
+        @param retriever The retriever to use for generating tokens
+        @param max_tokens_memory The maximum memory to use for token re - ordering
+        @param rerank The optimum rerank to use
+        @param llm The openAI instance to use for l
+        """
 
+        # OpenAI object for the OpenAI class
         if llm is None:
             import os
             from dotenv import load_dotenv
@@ -50,6 +58,7 @@ class GenerateModule(BaseModule):
         self.postprocessor = []
         self.max_tokens_memory = max_tokens_memory
 
+        # Append rerank to the postprocessor.
         if rerank is not None:
             self.postprocessor.append(rerank)
 
@@ -62,6 +71,12 @@ class GenerateModule(BaseModule):
         self.name = "Generate"
 
     def create_chat(self, chat_id):
+        """
+         @brief Creates a chat in the database. If chat_id is None or'' a new id will be generated
+         @param chat_id The id of the chat
+         @return The id of the chat in the database or None if no id was given ( for testing purposes not to be confused with id
+        """
+        # If chat_id is not None or empty string it will be used as a unique chat_id.
         if chat_id is None or chat_id == '':
             chat_id = str(uuid4())
         
@@ -70,12 +85,25 @@ class GenerateModule(BaseModule):
         return chat_id
 
     def get_or_create_memory(self, chat_id = None):
+        """
+         @brief Get or create memory. If chat_id is None or empty will create a new chat. Otherwise will return the memories with the given chat_id
+         @param chat_id Unique identifier for the chat
+         @return Tuple of memory and
+        """
+        # Create a new chat if not already created.
         if chat_id is None or chat_id.strip() not in self.memories or chat_id == '':
             chat_id = self.create_chat(chat_id)
 
         return self.memories[chat_id], chat_id
     
     def get_engine(self, domain, intent) -> BaseChatEngine:
+        """
+         @brief Get chat engine for given domain and intent. This is used to determine which retriever to use and the context template to use.
+         @param domain Domain to get engine for. Can be " out "
+         @param intent Intent to look up.
+         @return BaseChatEngine that can be used to interact with the retriever and context of the given intent. In the case of domain " out " the system prompt is
+        """
+        # SimpleChatEngine for the domain out.
         if domain == "out":
             return SimpleChatEngine.from_defaults(system_prompt=DEFAULT_SYSTEM_PROMPT)
 
@@ -85,6 +113,13 @@ class GenerateModule(BaseModule):
         )
 
     async def chat(self, text, engine: BaseChatEngine, memory):        
+        """
+         @brief Send a chat message to the chat engine. This is a wrapper around achat that handles history of messages sent to the chat engine
+         @param text The text to send to the engine
+         @param engine The chat engine that is used to send messages
+         @param memory The memory to use for this chat
+         @return The response from the chat engine or None if there was an error sending the message ( in which case the error will be logged
+        """
         response = await engine.achat(text, chat_history=memory.get_all())
         response = str(response)
         
@@ -93,10 +128,15 @@ class GenerateModule(BaseModule):
         return response
 
     async def _forward(self, **kwargs) -> dict:
+        """
+        @brief Forward to chat. Args : chat_id : Unique identifier for the chat. The id will be generated if not provided.
+        @return dict with keys " response " and " chat_id ". Response is sent to the user if any
+        """
 
         chat_id = kwargs.get("chat_id")
         memory, chat_id = self.get_or_create_memory(chat_id)
 
+        # Cache the chat message.
         if kwargs.get("cache_hit", False):
             memory.put(
                 ChatMessage(

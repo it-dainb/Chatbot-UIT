@@ -42,6 +42,12 @@ register_md = Markdown("""
 """)
 
 def register_account(state):
+    """
+     @brief Register account with chat. This will check if the password matches and if they don't it will send a request to the server
+     @param state Instance of : class : ` yum. State ` with variables set
+     @return True if successful False if not ( error or password mismatch ) and redirect to login page with token in
+    """
+    # register the user with the user s password
     if state.register_password == state.confirm_password:
 
         response = requests.post(
@@ -52,6 +58,7 @@ def register_account(state):
             }
         )
 
+        # This function is called when the server returns a 200 OK
         if response.status_code != 200:
             notify(state, "error", response.json()["detail"])
 
@@ -78,4 +85,8 @@ def register_account(state):
         state.confirm_password = ""
         
 def cancel(state):
+    """
+     @brief Cancel registration. This is called by : meth : ` ~discord. Connection. connect ` when the connection is closed.
+     @param state The state of the connection to cancel registration with
+    """
     state.register_open = False

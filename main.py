@@ -42,6 +42,10 @@ register_password = ""
 confirm_password = ""
 
 def reset(state):
+    """
+     @brief Reset the state to default values. This is called when user clicks a button in the conversation list to reset the state to the default values
+     @param state The state to reset
+    """
     state.token = None
     state.conversation = {
         "Conversation": [DEFAULT_MESSAGE]
@@ -56,6 +60,11 @@ def reset(state):
 
 def on_init(state: State) -> None:
     """
+     @brief Called when the app is initialized. This is a callback function that will be called by : func : ` pytorch_app. init ` in order to initialize the app.
+     @param state The state of the app. See : func : ` pytorch_app. init ` for more information.
+     @return None or an error object if something went wrong. The error object will be a subclass of : class : ` pants. core. errors. PreconditionFailure `
+    """
+    """
     Initialize the app.
 
     Args:
@@ -64,6 +73,11 @@ def on_init(state: State) -> None:
     reset(state)
 
 def update_context(state: State) -> None:
+    """
+     @brief Update the context with the user's message and the AI. This is used to send messages to the user and get access token
+     @param state The state of the app
+     @return The token that was sent to the user and the AI if successful None if not ( login_open
+    """
     """
     Update the context with the user's message and the AI's response.
 
@@ -81,7 +95,9 @@ def update_context(state: State) -> None:
         }
     )
 
+    # This function is called by the user to login the user.
     if response.status_code != 200:
+        # login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login login
         if state.login_username == "" or state.login_password == "":
             notify(state, "info", "Please login first!")
 
@@ -121,6 +137,10 @@ def update_context(state: State) -> None:
 
 def send_message(state: State) -> None:
     """
+     @brief Send the user's message to the API and update the context. This is the function that should be called in the context of the app
+     @param state The state of the
+    """
+    """
     Send the user's message to the API and update the context.
 
     Args:
@@ -139,6 +159,7 @@ def send_message(state: State) -> None:
 
     notify(state, "success", "Response received!")
 
+    # If there are no past conversations in the chat_id.
     if len(state.past_conversations) == 0 or state.chat_id != chat_id:
         past_conv = state.past_conversations.copy()
         past_conv = [[len(state.past_conversations), chat_id, state.conversation]] + past_conv
@@ -148,6 +169,13 @@ def send_message(state: State) -> None:
     state.chat_id = chat_id
 
 def style_conv(state: State, idx: int, row: int) -> str:
+    """
+     @brief Apply a style to the conversation table depending on the message. This is used to display the message in the conversation table
+     @param state The current state of the app
+     @param idx The index of the message in the table.
+     @param row The row of the message in the table.
+     @return The style to apply to the message or None if there is no message in the table for the given
+    """
     """
     Apply a style to the conversation table depending on the message's author.
 
@@ -159,6 +187,7 @@ def style_conv(state: State, idx: int, row: int) -> str:
     Returns:
         The style to apply to the message.
     """
+    # Return the message type for the given index.
     if idx is None:
         return None
     elif idx % 2 == 1:
@@ -168,6 +197,12 @@ def style_conv(state: State, idx: int, row: int) -> str:
 
 
 def on_exception(state, function_name: str, ex: Exception) -> None:
+    """
+     @brief Catches exceptions and notifies user in Taipy GUI. This function is called when an exception is raised in a function.
+     @param state State to use for notification. Can be any object that implements
+     @param function_name Name of function where exception occured
+     @param ex Exception that was raised.
+    """
     """
     Catches exceptions and notifies user in Taipy GUI
 
@@ -180,6 +215,11 @@ def on_exception(state, function_name: str, ex: Exception) -> None:
 
 
 def new_chat(state: State) -> None:
+    """
+     @brief Reset the chat by clearing the conversation. This is useful for testing purposes. If you want to make a new chat use : func : ` ~chats. Bot. new_chat ` instead.
+     @param state The state of the app. Must be a : class : ` ~chats. State ` object.
+     @return The return value of : func : ` ~chats. Bot. new_chat `. >>> state = state. get_current_state () Traceback ( most recent call last ) : NoState
+    """
     """
     Reset the chat by clearing the conversation.
 
@@ -195,6 +235,11 @@ def new_chat(state: State) -> None:
 
 def tree_adapter(item: list):
     """
+     @brief Adapter for tree_display to return id and displayed string. This adapter is used to convert past_conversations to id and displayed string
+     @param item element of past_conversations to be converted
+     @return tuple of id and displayed string if there is more than one conversation otherwise ( id displayed string ). In case of empty conversation it will return " Empty conversation
+    """
+    """
     Converts element of past_conversations to id and displayed string
 
     Args:
@@ -204,12 +249,19 @@ def tree_adapter(item: list):
         id and displayed string
     """
     identifier = str(item[0])
+    # Conversation identifier conversation 1 50 50
     if len(item[2]["Conversation"]) > 2:
         return (identifier, item[2]["Conversation"][-1][:50] + "...")
     return (identifier, "Empty conversation")
 
 
 def select_conv(state: State, var_name: str, value) -> None:
+    """
+     @brief Selects the conversation from past conversations. This is a callback for state changes that need to be performed after the user presses the select button.
+     @param state The state of the app. It is passed by the : class : `. Context ` object as well as a variable called ` state ` to allow
+     @param var_name
+     @param value
+    """
     """
     Selects conversation from past_conversations
 
@@ -227,10 +279,19 @@ def select_conv(state: State, var_name: str, value) -> None:
 
 past_prompts = []
 def menu_action(state, action, payload):
+    """
+     @brief Handle menu actions. Navigates to the page specified in the payload and calls the appropriate action depending on the page.
+     @param state The state to be used in the navigation.
+     @param action The action to be performed. This is passed to : func : ` waflib. actions. Action. menu_action ` as it is called from
+     @param payload The payload containing the page to navigate to.
+     @return The return value of : func : ` waflib. actions. Action. navigate ` after setting the state '
+    """
     page = payload["args"][0]
 
     state.login_open = False
+    # Login page. If login is successful login will be redirected to the login page.
     if page == "Login":
+        # If the user is logged in login open.
         if state.token is None:
             state.login_open = True
         else:
@@ -238,6 +299,7 @@ def menu_action(state, action, payload):
             navigate(state, "Chat")
             return
 
+    # Register page for register page.
     if page == "Register":
         state.register_open = True
 
@@ -245,6 +307,7 @@ def menu_action(state, action, payload):
         state.register_password = ""
         state.confirm_password = ""
 
+    # If the page is Chat then login first.
     if page == "Chat" and state.token is None:
         notify(state, "info", "Please login first!")
         state.login_open = True
@@ -254,10 +317,15 @@ def menu_action(state, action, payload):
     navigate(state, page)
 
 def navigate_to_home(state):
+    """
+     @brief Navigate to the Home page. This is a convenience function to make it easier to navigate to the Home page without having to worry about opening the login and registration pages in the middle of the navigation
+     @param state The state of the
+    """
     state.login_open = True
     state.register_open = True
     navigate(state, "Home")
 
+# This function is called by the main module.
 if __name__ == "__main__":
 
     gui = Gui(pages=pages)

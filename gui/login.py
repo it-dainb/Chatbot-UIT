@@ -41,10 +41,19 @@ login_md = Markdown("""
 """)
 
 def navigate_to_register(state):
+    """
+     @brief Navigate to the Register page. This is a convenience method to make it easier to navigate to the Register page without having to worry about the presence of the Register page in the state.
+     @param state The Lyntin state object to operate
+    """
     state.register_open = True
     navigate(state, "Register")
 
 def login_user(state):
+    """
+     @brief Logs in the user and sets the token. This is the first step in the login process. It uses the username and password to login to the server
+     @param state The state object containing the application state
+     @return The response from the server as a dictionary with the token_type and access_token as keys and the success /
+    """
     # Put your own authentication system here
     response = requests.post(
         "http://localhost:8080/user/login",
@@ -54,6 +63,7 @@ def login_user(state):
         }
     )
 
+    # If the response status code is not 200 notify the state.
     if response.status_code != 200:
         notify(state, "error", response.json()["detail"])
         return

@@ -21,6 +21,12 @@ class LossType(Enum):
 
 class ClsModel:
     def __init__(self, path: str = None, verbose = True):
+        """
+         @brief Initialize the instance. If path is None the instance is reset to its initial state. If path is a string it is treated as a path to a JSON file containing the configuration of the object
+         @param path The path to the JSON file
+         @param verbose Whether to print information about
+        """
+        # Load the file at path.
         if path is None:
             self.reset()
         else:
@@ -35,6 +41,14 @@ class ClsModel:
         layer, 
         kernel_initializer: tf.keras.initializers.Initializer, 
     ):
+        """
+         @brief Creates a 1D convolutional layer. It is used to train and test Keras models. In this case we are going to use Conv2D and Concatenate to get feature_conv = l_conv + max_pool + ave_pool
+         @param filters Number of filters in the convolutional layer
+         @param kernel_size Size of the convolution kernel in HWC
+         @param layer Layer to be used for the convolutional layer
+         @param kernel_initializer Initializer for the convolutional layer
+         @return Layer with 2 convolutional layers : max_pool and averaged_pool. Output is a tensor
+        """
         l_conv = keras.layers.Conv1D(filters, kernel_size, kernel_initializer=kernel_initializer, padding="same", activation="relu")(layer)
         max_pool = keras.layers.GlobalMaxPooling1D()(l_conv)
         ave_pool = keras.layers.GlobalAveragePooling1D()(l_conv)
@@ -50,6 +64,15 @@ class ClsModel:
         l2: float=0.001, 
         dropout: float=0.25
     ):
+        """
+         @brief Creates a fully connected layer. It is used to create an input and output of a convolutional neural network.
+         @param units Number of neurons in the network. Must be greater than 1.
+         @param layer Layer to be connected to. Must be a layer of type Conv2D or Conv2DWithHilbertSpace.
+         @param kernel_initializer Initializer for the kernel. Must be a Keras initializer.
+         @param l2 L2 regularizer for the layer.
+         @param dropout Dropout factor for the layer. Must be a Keras initializer.
+         @return A fully connected layer with the given parameters. Note that the layer will be created in the same way
+        """
         dense = keras.layers.Dense(
             units, 
             activation='relu', 
@@ -61,6 +84,10 @@ class ClsModel:
         return fully_connect
     
     def create_model(self) -> tf.keras.Model:
+        """
+         @brief Creates a Keras model. This is an implementation of the Model interface used to train the model.
+         @return A Keras model ready to be fed into the model_fn argument of tf. keras. Estimator
+        """
         embedding_layer = keras.layers.Embedding(
             self.config['vocab_size'],
             self.config['embedding_dim'], 
@@ -90,6 +117,11 @@ class ClsModel:
         return model
 
     def train_word2vec(self, X_data):
+        """
+         @brief Train word2vec model with data. This is a method to be used in conjunction with train_model
+         @param X_data List of sentences each of which is a list of word
+         @return Word2Vec model for training the neural network with X_data as input and output as output
+        """
         logger.info("Training word2vec model")
         
         sentences = [row.strip().split(" ") for row in X_data]
@@ -107,6 +139,11 @@ class ClsModel:
         return w2v_model
 
     def train_tokenizer(self, X_data):
+        """
+         @brief Train a tokenizer on the data. This is a convenience method for use in testing. It will return a Keras tokenizer and vocab size
+         @param X_data data to be used for training
+         @return tokenizer and vocab size for the training data ( int ) or None if there is no tokenizer ( None
+        """
         logger.info("Training tokenizer")
         
         tokenizer = keras.preprocessing.text.Tokenizer(filters="", lower=True, split=' ', oov_token="UNK")
@@ -117,12 +154,21 @@ class ClsModel:
         return tokenizer, vocab_size
     
     def reset(self):
+        """
+         @brief Reset the state of the model. This is called when you want to re - use the model for a new
+        """
         self.model = None
         self.tokenizer = None
         self.w2v_model = None
         self.config = {}
 
     def prepare_X(self, X_data):
+        """
+         @brief Prepare data for training. This is a wrapper around preprocessing to convert text to sequences and pad to word length
+         @param X_data list of strings or single string
+         @return X_data_padded list of sequences padded to word length or single string depending on config.
+        """
+        # If X_data is a string it is converted to a list of strings.
         if isinstance(X_data, str):
             X_data = [X_data]
 
@@ -132,9 +178,20 @@ class ClsModel:
         return X_data_padded
 
     def prepare_y(self, y_data):
+        """
+         @brief Convert the data to Categorical. This is called before training to make it easier to use in inference
+         @param y_data A tensor of shape [ batch_size num_class ]
+         @return A tensor of shape [ batch_size num_class ] where each element is a 1 - D
+        """
         return tf.keras.utils.to_categorical(y_data, num_classes=self.config['num_class'])
     
     def prepare_data(self, X_data, y_data):
+        """
+         @brief Prepare data for training and testing. This is a wrapper around the : func : ` ~gensim. models. train_test_split ` function to split the data into training and testing sets
+         @param X_data Data to be used for training
+         @param y_data Target values for training ( 0 - 1 )
+         @return A tuple of : class : ` numpy. ndarray ` of shape ( n_samples n_features
+        """
         
         X_data_encode = self.prepare_X(X_data)
         y_data_encode = self.prepare_y(y_data)
@@ -149,10 +206,16 @@ class ClsModel:
         return X_train, X_test, y_train, y_test
 
     def get_embedding_matrix(self):
+        """
+         @brief Generates a matrix of word embeddings. This is used to determine which words are part of the vocabulary and which are not in the vocabulary.
+         @return An N x N matrix where N is the number of words in the vocabulary and each row is a word
+        """
         embedding_matrix = np.asarray([np.random.uniform(-0.01, 0.01, self.config['embedding_dim']) for _ in range(self.config['vocab_size'])])
+        # Returns the embedding vector for each word in the vocabulary.
         for word, i in self.tokenizer.word_index.items():
             try:
                 embedding_vector = self.word2vec_model.wv.get_vector(word, norm=True)
+                # Set the embedding vector to the embedding vector.
                 if embedding_vector is not None:
                     # words not found in embedding index will be all-zeros.
                     embedding_matrix[i] = embedding_vector
@@ -167,6 +230,12 @@ class ClsModel:
         optimizer: tf.keras.optimizers = None, 
         loss: LossType = LossType.binary,
     ):
+        """
+         @brief Compile the model. This is a convenience method for compiling the model with Keras optimizers.
+         @param lr learning rate to use for training and eval.
+         @param optimizer optimizer to use for compilation. If None a Adam optimizer will be used.
+         @param loss Loss type to use for loss computations
+        """
         optimizer = optimizer if optimizer else keras.optimizers.Adam(learning_rate=lr)
         self.model.compile(loss=loss.value, optimizer=optimizer, metrics=[
             keras.metrics.BinaryAccuracy() if loss == LossType.binary else keras.metrics.CategoricalAccuracy(),
@@ -184,7 +253,18 @@ class ClsModel:
         loss: LossType = LossType.binary,
         reset: bool = False,
         save_path: str = "Models"
-    ):        
+    ):       
+        """
+         @brief Train the Keras model. This is the main entry point for training the Keras model. You can call it yourself as an instance of the Keras class or in a subclass if you want to use different optimizers or loss functions.
+         @param data Dictionary containing x and y. Each key should be a string and the value should be a numpy array of shape [ num_samples num_classes ]
+         @param embedding_dim Dimension of embeddings to use.
+         @param name Name of the Keras model. Default is " cls_model "
+         @param lr Loss parameter for the Keras model.
+         @param optimizer Optimizer to use for training ( default is None )
+         @param loss Loss parameter for the Keras model.
+         @param reset If True the model will be reset to initial state ( default is False )
+         @param save_path Path to save the model to ( default is " Models "
+        """ 
         X_data = data['x']
         y_data = data['y']
 
@@ -197,6 +277,7 @@ class ClsModel:
         self.config['class'] = data['class']
         self.config['name'] = name
 
+        # Reset the state of the object to its initial state.
         if reset:
             self.reset()
 
@@ -207,6 +288,7 @@ class ClsModel:
         
         self.embedding_matrix = self.get_embedding_matrix()
         
+        # Create a new model if it doesn t exist.
         if self.model is None:
             self.model = self.create_model()
 
@@ -231,6 +313,11 @@ class ClsModel:
         self.save(name, save_path)
 
     def save(self, name, path):
+        """
+         @brief Save the Keras model to disk. This will be called by : meth : ` keras. models. BaseModel. save `
+         @param name The name of the saved model.
+         @param path The directory to save the model to. It will be created if it doesn't exist
+        """
         save_path = os.path.join(path, name)
 
         os.makedirs(save_path, exist_ok=True)
@@ -250,6 +337,11 @@ class ClsModel:
         )
 
     def load(self, path):
+        """
+         @brief Load model from path. This is called by : meth : ` ~gensim. models. tfa. Trainer. train `
+         @param path Path to the model
+        """
+        # Check if path exists and is not a valid model.
         if not os.path.exists(path):
             raise FileNotFoundError(f"Path {path} not found! Please train model first!")
         
@@ -262,6 +354,11 @@ class ClsModel:
         self.embedding_matrix = joblib.load(os.path.join(path, "embedding_matrix.pkl"))
     
     async def predict(self, query):
+        """
+         @brief Predict class probabilities for a query. This is a coroutine. You can call it from any thread.
+         @param query Query to predict class probabilities for. It should be a tensor of shape [ batch_size num_query_words ]
+         @return List of class probabilities
+        """
         x_feature = self.prepare_X(query)
 
         with tf.device('/cpu:0'):
