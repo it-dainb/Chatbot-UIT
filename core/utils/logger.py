@@ -1,3 +1,4 @@
+# This is a copy of colorlog. I'm going to make it work in the future. It's not very good for this
 import colorlog
 from colorlog import ColoredFormatter
 
